@@ -28,11 +28,11 @@ func DownloadFile(fileHash, outputPath string, peers []common.PeerInfo, fileMana
 	}
 
 	log.Println("Finding the best peer by running speed tests...")
-	bestPeer, err := findBestPeer(peers)
+	bestPeer, bestSpeed, err := findBestPeer(peers)
 	if err != nil {
 		return fmt.Errorf("could not determine best peer: %w", err)
 	}
-	log.Printf("Best peer found: %s (%s:%d) with %.2f Mbps", bestPeer.ID, bestPeer.IP, bestPeer.Port, 0) // Speed isn't returned here, could be added.
+	log.Printf("Best peer found: %s (%s:%d) with %.2f Mbps", bestPeer.ID, bestPeer.IP, bestPeer.Port, bestSpeed) // Speed isn't returned here, could be added.
 
 	client, err := createQUICClient()
 	if err != nil {
@@ -106,10 +106,10 @@ func DownloadFile(fileHash, outputPath string, peers []common.PeerInfo, fileMana
 	return nil
 }
 
-func findBestPeer(peers []common.PeerInfo) (common.PeerInfo, error) {
+func findBestPeer(peers []common.PeerInfo) (common.PeerInfo, float64, error) {
 	client, err := createQUICClient()
 	if err != nil {
-		return common.PeerInfo{}, err
+		return common.PeerInfo{}, 0, err
 	}
 
 	speeds := make(chan peerSpeed, len(peers))
@@ -135,7 +135,7 @@ func findBestPeer(peers []common.PeerInfo) (common.PeerInfo, error) {
 			}
 			duration := time.Since(start)
 			mbps := (float64(len(body)) * 8) / (1024 * 1024) / duration.Seconds()
-			log.Printf("Peer %s speed: %.2f Mbps", peer.ID, mbps)
+			log.Printf("Peer @ %s speed: %.2f Mbps", peer.IP, mbps)
 			speeds <- peerSpeed{peer: peer, mbps: mbps}
 		}(p)
 	}
@@ -147,7 +147,7 @@ func findBestPeer(peers []common.PeerInfo) (common.PeerInfo, error) {
 		sortedSpeeds = append(sortedSpeeds, s)
 	}
 	if len(sortedSpeeds) == 0 {
-		return common.PeerInfo{}, fmt.Errorf("all peers failed the speed test")
+		return common.PeerInfo{}, 0, fmt.Errorf("all peers failed the speed test")
 	}
 
 	// Sort by speed, descending
@@ -155,7 +155,7 @@ func findBestPeer(peers []common.PeerInfo) (common.PeerInfo, error) {
 		return sortedSpeeds[i].mbps > sortedSpeeds[j].mbps
 	})
 
-	return sortedSpeeds[0].peer, nil
+	return sortedSpeeds[0].peer, sortedSpeeds[0].mbps, nil
 }
 
 func getMetadataFromPeer(client *http.Client, peer common.PeerInfo, fileHash string) (*common.FileMetadata, error) {
