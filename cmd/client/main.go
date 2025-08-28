@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -26,15 +27,34 @@ type TrackerClient struct {
 	peerInfo common.PeerInfo
 }
 
+func getLocalIP() (string, error) {
+	// Use Google's DNS; no packets are actually sent for UDP dial.
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+	localAddr, ok := conn.LocalAddr().(*net.UDPAddr)
+	if !ok {
+		return "", fmt.Errorf("unexpected local address type")
+	}
+	return localAddr.IP.String(), nil
+}
+
 func NewTrackerClient(trackerURL string, peerPort int) *TrackerClient {
-	// In a real scenario, you'd get the LAN IP more robustly.
-	// For this example, we assume it's discoverable or localhost for testing.
+
+	localIP, err := getLocalIP()
+	if err != nil {
+		log.Fatalf("Could not determine local IP address: %v", err)
+	}
+	log.Printf("Using local IP address: %s", localIP)
+
 	return &TrackerClient{
 		baseURL: trackerURL,
 		client:  &http.Client{Timeout: 10 * time.Second},
 		peerInfo: common.PeerInfo{
 			ID:   uuid.New().String(),
-			IP:   "127.0.0.1", // IMPORTANT: Change this to your actual LAN IP
+			IP:   localIP, // IMPORTANT: Change this to your actual LAN IP
 			Port: peerPort,
 		},
 	}
@@ -120,6 +140,8 @@ func main() {
 	case "get":
 		getCmd.Parse(os.Args[2:])
 		fileHash := getCmd.Arg(0)
+		*getOutput = getCmd.Arg(1)
+
 		if fileHash == "" {
 			log.Fatal("get command requires a file hash")
 		}
