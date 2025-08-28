@@ -64,7 +64,7 @@ func DownloadFile(fileHash, outputPath string, peers []common.PeerInfo, fileMana
 	close(chunks)
 
 	numWorkers := 10 // Concurrent downloads
-	for i := 0; i < numWorkers; i++ {
+	for range numWorkers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

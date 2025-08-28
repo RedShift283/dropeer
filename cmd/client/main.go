@@ -28,7 +28,7 @@ type TrackerClient struct {
 }
 
 func getLocalIP() (string, error) {
-	// Use Google's DNS; no packets are actually sent for UDP dial.
+
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
 		return "", err
@@ -54,7 +54,7 @@ func NewTrackerClient(trackerURL string, peerPort int) *TrackerClient {
 		client:  &http.Client{Timeout: 10 * time.Second},
 		peerInfo: common.PeerInfo{
 			ID:   uuid.New().String(),
-			IP:   localIP, // IMPORTANT: Change this to your actual LAN IP
+			IP:   localIP,
 			Port: peerPort,
 		},
 	}
@@ -114,6 +114,8 @@ func main() {
 	getPort := getCmd.Int("p", 4041, "Port for P2P communication")
 	getOutput := getCmd.String("o", "", "Output file name (required)")
 
+	flag.Parse()
+
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: client <share|get> [options]")
 		return
@@ -127,7 +129,7 @@ func main() {
 	}
 	log.Printf("Tracker found at: %s", trackerURL)
 
-	switch os.Args[1] {
+	switch flag.Arg(0) {
 	case "share":
 		shareCmd.Parse(os.Args[2:])
 		filePath := shareCmd.Arg(0)
@@ -138,9 +140,8 @@ func main() {
 		handleShare(trackerURL, filePath, *sharePort)
 
 	case "get":
-		getCmd.Parse(os.Args[2:])
-		fileHash := getCmd.Arg(0)
-		*getOutput = getCmd.Arg(1)
+		getCmd.Parse(flag.Args()[2:])
+		fileHash := os.Args[2]
 
 		if fileHash == "" {
 			log.Fatal("get command requires a file hash")
