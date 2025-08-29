@@ -41,6 +41,7 @@ func getLocalIP() (string, error) {
 	return localAddr.IP.String(), nil
 }
 
+// Initialize a new TrackerClient.
 func NewTrackerClient(trackerURL string, peerPort int) *TrackerClient {
 
 	localIP, err := getLocalIP()

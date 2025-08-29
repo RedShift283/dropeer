@@ -4,7 +4,7 @@ import "time"
 
 const (
 	// ServiceName is the mDNS service name for tracker discovery.
-	ServiceName = "_localtorrent._tcp"
+	ServiceName = "local._dropeer._tcp"
 	// ServiceDomain is the mDNS service domain.
 	ServiceDomain = "local."
 	// ChunkSize is the size of each file chunk in bytes (1MB).

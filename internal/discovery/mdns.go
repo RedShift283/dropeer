@@ -11,9 +11,9 @@ import (
 	"github.com/grandcat/zeroconf"
 )
 
-// PublishService publishes the tracker service on the network.
+// Publish tracker service using mDNS.
 func PublishService(port int) (*zeroconf.Server, error) {
-	server, err := zeroconf.Register("GoP2PLAN-Tracker", common.ServiceName, common.ServiceDomain, port, []string{"txtv=0", "lo=1", "la=2"}, nil)
+	server, err := zeroconf.Register("Dropeer-Tracker", common.ServiceName, common.ServiceDomain, port, []string{"txtv=0", "lo=1", "la=2"}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not register service: %w", err)
 	}
